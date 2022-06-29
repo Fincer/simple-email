@@ -64,7 +64,6 @@ import java.util.concurrent.ThreadFactory;
 import javax.mail.Address;
 import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
 
 public class Helper {
   static final String TAG = "simpleemail";
@@ -205,10 +204,6 @@ public class Helper {
     } catch (ClassNotFoundException ignored) {
       return false;
     }
-  }
-
-  static Address myAddress() throws UnsupportedEncodingException {
-    return new InternetAddress("distopico@riseup.net", "Distopico");
   }
 
   static String canonicalAddress(String address) {

@@ -313,7 +313,6 @@ public class ActivityView extends ActivityBase
     }
 
     checkFirst();
-    checkCrash();
     // TODO: check update from menu
     // checkUpdate();
 
@@ -494,120 +493,6 @@ public class ActivityView extends ActivityBase
               })
           .show();
     }
-  }
-
-  private void checkCrash() {
-    new SimpleTask<Long>() {
-      @Override
-      protected Long onLoad(Context context, Bundle args) throws Throwable {
-        File file = new File(context.getCacheDir(), "crash.log");
-        if (file.exists()) {
-          // Get version info
-          StringBuilder sb = new StringBuilder();
-          Locale locale = Locale.US;
-
-          sb.append(context.getString(R.string.title_crash_info_remark)).append("\n\n\n\n");
-
-          sb.append(
-              String.format(
-                  locale,
-                  "%s: %s %s/%s\r\n",
-                  context.getString(R.string.app_name),
-                  BuildConfig.APPLICATION_ID,
-                  BuildConfig.VERSION_NAME,
-                  Helper.hasValidFingerprint(context) ? "1" : "3"));
-          sb.append(
-              String.format(
-                  locale,
-                  "Android: %s (SDK %d)\r\n",
-                  Build.VERSION.RELEASE,
-                  Build.VERSION.SDK_INT));
-          sb.append("\r\n");
-
-          // Get device info
-          sb.append(String.format(locale, "Brand: %s\r\n", Build.BRAND));
-          sb.append(String.format(locale, "Manufacturer: %s\r\n", Build.MANUFACTURER));
-          sb.append(String.format(locale, "Model: %s\r\n", Build.MODEL));
-          sb.append(String.format(locale, "Product: %s\r\n", Build.PRODUCT));
-          sb.append(String.format(locale, "Device: %s\r\n", Build.DEVICE));
-          sb.append(String.format(locale, "Host: %s\r\n", Build.HOST));
-          sb.append(String.format(locale, "Display: %s\r\n", Build.DISPLAY));
-          sb.append(String.format(locale, "Id: %s\r\n", Build.ID));
-          sb.append("\r\n");
-
-          BufferedReader in = null;
-          try {
-            String line;
-            in = new BufferedReader(new FileReader(file));
-            while ((line = in.readLine()) != null) {
-              sb.append(line).append("\r\n");
-            }
-          } finally {
-            if (in != null) {
-              in.close();
-            }
-          }
-
-          file.delete();
-
-          String body = "<pre>" + sb.toString().replaceAll("\\r?\\n", "<br />") + "</pre>";
-
-          EntityMessage draft = null;
-
-          DB db = DB.getInstance(context);
-          try {
-            db.beginTransaction();
-
-            EntityFolder drafts = db.folder().getPrimaryDrafts();
-            if (drafts != null) {
-              draft = new EntityMessage();
-              draft.account = drafts.account;
-              draft.folder = drafts.id;
-              draft.msgid = EntityMessage.generateMessageId();
-              draft.to = new Address[] {Helper.myAddress()};
-              draft.subject =
-                  context.getString(R.string.app_name)
-                      + " "
-                      + BuildConfig.VERSION_NAME
-                      + " crash log";
-              draft.content = true;
-              draft.received = new Date().getTime();
-              draft.seen = false;
-              draft.ui_seen = false;
-              draft.flagged = false;
-              draft.ui_flagged = false;
-              draft.ui_hide = false;
-              draft.ui_found = false;
-              draft.ui_ignored = false;
-              draft.id = db.message().insertMessage(draft);
-              draft.write(context, body);
-            }
-
-            EntityOperation.queue(db, draft, EntityOperation.ADD);
-
-            db.setTransactionSuccessful();
-          } finally {
-            db.endTransaction();
-          }
-
-          EntityOperation.process(context);
-
-          return (draft == null ? null : draft.id);
-        }
-
-        return null;
-      }
-
-      @Override
-      protected void onLoaded(Bundle args, Long id) {
-        if (id != null) {
-          startActivity(
-              new Intent(ActivityView.this, ActivityCompose.class)
-                  .putExtra("action", "edit")
-                  .putExtra("id", id));
-        }
-      }
-    }.load(this, new Bundle());
   }
 
   private class UpdateInfo {
