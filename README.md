@@ -3,9 +3,16 @@
 
 A [Free Software][free-software], minimalistic and privacy friendly email app for Android.
 
-<a href="https://f-droid.org/packages/org.dystopia.email"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="75"></a>
+Original source code hosted on [GitLab](https://framagit.org/dystopia-project/simple-email).
 
-Alternatively, you can download directly from GitLab [Releases][gitlab-releases].
+## Additional modifications
+
+* Removed hidden/automatic crash reporting to `distopico@riseup.net`
+* Removed update mechanism
+* Removed enforced auto-start application behavior
+* Minor style fixes
+
+# Original readme sections
 
 ## Highlights
 
