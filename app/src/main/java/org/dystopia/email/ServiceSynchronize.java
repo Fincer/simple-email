@@ -343,7 +343,7 @@ public class ServiceSynchronize extends LifecycleService {
       }
     }
 
-    return START_STICKY;
+    return START_NOT_STICKY;
   }
 
   private Notification.Builder getNotificationService(TupleAccountStats stats) {
