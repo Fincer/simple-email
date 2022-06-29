@@ -116,10 +116,6 @@ public class ActivityView extends ActivityBase
   static final String ACTION_STORE_ATTACHMENT = BuildConfig.APPLICATION_ID + ".STORE_ATTACHMENT";
   static final String ACTION_DECRYPT = BuildConfig.APPLICATION_ID + ".DECRYPT";
 
-  static final String UPDATE_LATEST_API =
-      "https://framagit.org/api/v4/projects/dystopia-project%2Fsimple-email/repository/tags";
-  static final long UPDATE_INTERVAL = 12 * 3600 * 1000L; // milliseconds
-
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -313,8 +309,6 @@ public class ActivityView extends ActivityBase
     }
 
     checkFirst();
-    // TODO: check update from menu
-    // checkUpdate();
 
     pgpService = new OpenPgpServiceConnection(this, "org.sufficientlysecure.keychain");
     pgpService.bindToService();
@@ -493,105 +487,6 @@ public class ActivityView extends ActivityBase
               })
           .show();
     }
-  }
-
-  private class UpdateInfo {
-    String tag_name; // version
-    String html_url;
-  }
-
-  private void checkUpdate() {
-    final long now = new Date().getTime();
-    final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-    if (prefs.getLong("last_update_check", 0) + UPDATE_INTERVAL > now) {
-      return;
-    }
-
-    new SimpleTask<UpdateInfo>() {
-      @Override
-      protected UpdateInfo onLoad(Context context, Bundle args) throws Throwable {
-        StringBuilder json = new StringBuilder();
-        HttpsURLConnection urlConnection = null;
-        try {
-          URL latest = new URL(UPDATE_LATEST_API);
-          urlConnection = (HttpsURLConnection) latest.openConnection();
-          BufferedReader br =
-              new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-
-          String line;
-          while ((line = br.readLine()) != null) {
-            json.append(line);
-          }
-
-          JSONObject jroot = new JSONObject(json.toString());
-          if (jroot.has("tag_name") && jroot.has("html_url") && jroot.has("assets")) {
-            prefs.edit().putLong("last_update_check", now).apply();
-
-            UpdateInfo info = new UpdateInfo();
-            info.tag_name = jroot.getString("tag_name");
-            info.html_url = jroot.getString("html_url");
-            if (TextUtils.isEmpty(info.html_url)) {
-              return null;
-            }
-
-            JSONArray jassets = jroot.getJSONArray("assets");
-            for (int i = 0; i < jassets.length(); i++) {
-              JSONObject jasset = jassets.getJSONObject(i);
-              if (jasset.has("name")) {
-                String name = jasset.getString("name");
-                if (name != null && name.endsWith(".apk")) {
-                  if (TextUtils.isEmpty(info.tag_name)) {
-                    info.tag_name = name;
-                  }
-
-                  Log.i(Helper.TAG, "Latest version=" + info.tag_name);
-                  if (BuildConfig.VERSION_NAME.equals(info.tag_name)) {
-                    break;
-                  } else {
-                    return info;
-                  }
-                }
-              }
-            }
-          }
-        } finally {
-          if (urlConnection != null) {
-            urlConnection.disconnect();
-          }
-        }
-
-        return null;
-      }
-
-      @Override
-      protected void onLoaded(Bundle args, UpdateInfo info) {
-        if (info == null) {
-          return;
-        }
-
-        final Intent update = new Intent(Intent.ACTION_VIEW, Uri.parse(info.html_url));
-        if (update.resolveActivity(getPackageManager()) != null) {
-          new DialogBuilderLifecycle(ActivityView.this, ActivityView.this)
-              .setMessage(getString(R.string.title_updated, info.tag_name))
-              .setPositiveButton(
-                  android.R.string.ok,
-                  new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                      Helper.view(ActivityView.this, update);
-                    }
-                  })
-              .show();
-        }
-      }
-
-      @Override
-      protected void onException(Bundle args, Throwable ex) {
-        if (BuildConfig.DEBUG) {
-          Helper.unexpectedError(ActivityView.this, ex);
-        }
-      }
-    }.load(this, new Bundle());
   }
 
   private Intent getIntentFAQ() {
